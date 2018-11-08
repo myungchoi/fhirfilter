@@ -1,4 +1,4 @@
-package edu.gatech.chai.fhir.fhircutter;
+package edu.gatech.chai.fhir.fhirfilter;
 
 /**
  * Hello world!
