@@ -9,9 +9,6 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.sun.tools.javac.util.Assert;
-
-import edu.gatech.chai.fhir.fhirfilter.dao.FhirFilterDaoImpl;
 
 public class FilterData {
 	final static Logger logger = LoggerFactory.getLogger(FilterData.class);
@@ -22,7 +19,9 @@ public class FilterData {
 	private JSONObject jsonObject;
 
 	public FilterData(String jsonString) {
-		Assert.checkNonNull(jsonString, "JSON String cannot be null");
+		if (jsonString == null || jsonString.isEmpty()) {
+			throw new IllegalArgumentException("JSON String cannot be null or empty");
+		}
 		
 		try {
 			this.jsonObject = new JSONObject(jsonString);
