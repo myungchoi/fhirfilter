@@ -82,13 +82,13 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 		filterData.setEffectiveStartDate(rs.getTimestamp("effective_start_date"));
 		filterData.setEffectiveEndDate(rs.getTimestamp("effective_end_date"));
 		filterData.setId(rs.getLong("id"));
-		filterData.getJsonObject().put("id", rs.getLong("id"));
+		filterData.getJsonObject().put("id", rs.getString("id"));
 
 		return filterData;
 	}
 	
 	@Override
-	public FilterData get(Long id) {
+	public FilterData getById(Long id) {
 		FilterData filterData = null;		
 		String sql = "SELECT * FROM filterdata where id = ?";
 

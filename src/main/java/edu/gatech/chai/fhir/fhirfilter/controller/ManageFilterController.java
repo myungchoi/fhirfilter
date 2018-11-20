@@ -19,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -67,7 +68,7 @@ public class ManageFilterController {
 	public @ResponseBody ResponseEntity<String> getFilterById(@PathVariable String id) {
 		Long idLong = Long.valueOf(id);
 
-		FilterData filterData = fhirFilterDao.get(idLong);
+		FilterData filterData = fhirFilterDao.getById(idLong);
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -79,7 +80,7 @@ public class ManageFilterController {
 	}
 
 	@PostMapping("")
-	public @ResponseBody ResponseEntity<String> putFilter(@RequestBody String jsonString) {
+	public @ResponseBody ResponseEntity<String> postFilter(@RequestBody String jsonString) {
 		FilterData filterData = null;
 		try {
 			filterData = new FilterData(jsonString);
@@ -87,6 +88,21 @@ public class ManageFilterController {
 			return new ResponseEntity<>("Incorrect JSON: " + jsonString, HttpStatus.BAD_REQUEST);
 		}
 
+		if (filterData.getJsonObject().has("id")) {
+			Long id = Long.valueOf(filterData.getJsonObject().getString("id"));
+			FilterData existingFilterData = fhirFilterDao.getById(id);
+			if (existingFilterData != null) {
+				existingFilterData.setEffectiveStartDate(filterData.getEffectiveStartDate());
+				existingFilterData.setEffectiveEndDate(filterData.getEffectiveEndDate());
+				existingFilterData.setJsonObject(filterData.getJsonObject());
+				fhirFilterDao.update(existingFilterData);
+				
+				HttpHeaders headers = new HttpHeaders();
+				headers.setContentType(MediaType.APPLICATION_JSON);
+
+				return new ResponseEntity<>(existingFilterData.toString(), headers, HttpStatus.OK);
+			}
+		}
 		int id = fhirFilterDao.save(filterData);
 
 		if (id > 0) {
@@ -101,4 +117,33 @@ public class ManageFilterController {
 		}
 	}
 
+	@PutMapping("{id}")
+	public @ResponseBody ResponseEntity<String> putFilter(@PathVariable String idString, @RequestBody String jsonString) {
+		FilterData filterData = null;
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		try {
+			filterData = new FilterData(jsonString);
+		} catch (JSONException e) {
+			return new ResponseEntity<>("Incorrect JSON: " + jsonString, HttpStatus.BAD_REQUEST);
+		}
+
+		Long id = Long.valueOf(idString);
+		if (filterData.getId() != id) {
+			return new ResponseEntity<>("/id is not same as id in content", headers, HttpStatus.BAD_REQUEST);
+		}
+		
+		FilterData existingFilterData = fhirFilterDao.getById(id);
+		if (existingFilterData == null) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		
+		existingFilterData.setEffectiveStartDate(filterData.getEffectiveStartDate());
+		existingFilterData.setEffectiveEndDate(filterData.getEffectiveEndDate());
+		existingFilterData.setJsonObject(filterData.getJsonObject());
+		fhirFilterDao.update(existingFilterData);
+		
+		return new ResponseEntity<>(existingFilterData.toString(), headers, HttpStatus.OK);
+	}
 }

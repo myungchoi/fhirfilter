@@ -95,13 +95,21 @@ public class ApplyFilterController {
 			// We are removing entire data.
 			JSONArray origKeyArray = origJSON.names();
 			for (Object key: origKeyArray) {
-				origJSON.remove((String)key);
+				String keyString = (String)key;
+				if ("resourceType".equals(keyString)) continue;
+				origJSON.remove(keyString);
 			}
 		} else {
 			// Walk over the filterJSON key and remove them.
 			JSONArray filterKeyArray = filterJSON.names();
 			for (Object key: filterKeyArray) {
-				origJSON.remove((String)key);
+				String keyString = (String)key;
+				if ("resourceType".equals(keyString)) continue;
+				if (filterJSON.isNull(keyString)) {
+					origJSON.remove(keyString);
+				} else {
+					origJSON.put(keyString, filterJSON.get(keyString));
+				}
 			}
 		}
 

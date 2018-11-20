@@ -12,5 +12,5 @@ public interface FhirFilterDao {
 	public void update(FilterData filterData);
 	public void delete(Long id);
 	public List<FilterData> get();
-	public FilterData get(Long id);
+	public FilterData getById(Long id);
 }
