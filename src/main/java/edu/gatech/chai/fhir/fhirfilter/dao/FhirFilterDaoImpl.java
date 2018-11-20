@@ -23,9 +23,13 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 		String url = "jdbc:sqlite::resource:fhirfilter.db";
 		Connection conn = null;
 		try {
+			Class.forName("org.sqlite.JDBC");
 			conn = DriverManager.getConnection(url);
 			logger.info("Connected to database");
 		} catch (SQLException e) {
+			logger.info(e.getMessage());
+			e.printStackTrace();
+		} catch (ClassNotFoundException e) {
 			logger.info(e.getMessage());
 			e.printStackTrace();
 		}

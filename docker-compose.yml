@@ -1,6 +1,6 @@
 version: '2'
 services:
-  gt-fhir2:
+  fhirfilter:
     build:
       context: .
       dockerfile: Dockerfile
