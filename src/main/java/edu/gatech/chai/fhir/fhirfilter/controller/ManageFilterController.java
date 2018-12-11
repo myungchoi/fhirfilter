@@ -118,7 +118,7 @@ public class ManageFilterController {
 	}
 
 	@PutMapping("{id}")
-	public @ResponseBody ResponseEntity<String> putFilter(@PathVariable String idString, @RequestBody String jsonString) {
+	public @ResponseBody ResponseEntity<String> putFilter(@PathVariable String id, @RequestBody String jsonString) {
 		FilterData filterData = null;
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
@@ -129,12 +129,12 @@ public class ManageFilterController {
 			return new ResponseEntity<>("Incorrect JSON: " + jsonString, HttpStatus.BAD_REQUEST);
 		}
 
-		Long id = Long.valueOf(idString);
-		if (filterData.getId() != id) {
+		Long idLong = Long.valueOf(id);
+		if (filterData.getId() != idLong) {
 			return new ResponseEntity<>("/id is not same as id in content", headers, HttpStatus.BAD_REQUEST);
 		}
 		
-		FilterData existingFilterData = fhirFilterDao.getById(id);
+		FilterData existingFilterData = fhirFilterDao.getById(idLong);
 		if (existingFilterData == null) {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
