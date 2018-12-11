@@ -133,7 +133,6 @@ public class ApplyFilterController {
 			// Don't worry about FHIR requirement. We just remove it.
 			if (filter.isNull(currentFilterKey)) {
 				Object removed = resource.remove(currentKey);
-				logger.debug("Removed:"+removed);
 				continue;
 			}
 
