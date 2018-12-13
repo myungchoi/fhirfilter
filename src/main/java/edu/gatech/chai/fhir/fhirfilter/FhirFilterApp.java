@@ -10,6 +10,7 @@ import org.springframework.boot.web.servlet.support.SpringBootServletInitializer
 
 @SpringBootApplication
 public class FhirFilterApp extends SpringBootServletInitializer {
+	
     public static void main( String[] args )
     {
         SpringApplication.run(FhirFilterApp.class, args);
