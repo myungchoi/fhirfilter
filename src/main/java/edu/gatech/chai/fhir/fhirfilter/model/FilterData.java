@@ -14,8 +14,7 @@ public class FilterData {
 	final static Logger logger = LoggerFactory.getLogger(FilterData.class);
 
 	private Long id;
-	private Date effectiveStartDate;
-	private Date effectiveEndDate;
+	private String profileName;
 	private JSONObject jsonObject;
 
 	public FilterData(String jsonString) {
@@ -36,27 +35,9 @@ public class FilterData {
 			setId(Long.valueOf(id));
 		}
 
-		if (!jsonObject.isNull("effectiveDate")) {
-			JSONObject effectiveDate = jsonObject.getJSONObject("effectiveDate");
-			if (!effectiveDate.isNull("startDate")) {
-				String startDateString = effectiveDate.getString("startDate");
-				try {
-					this.effectiveStartDate = new SimpleDateFormat("yyyy-MM-dd").parse(startDateString);
-				} catch (ParseException e) {
-					logger.error(e.getMessage());
-					e.printStackTrace();
-				}
-			}
-
-			if (!effectiveDate.isNull("endDate")) {
-				String startDateString = effectiveDate.getString("endDate");
-				try {
-					this.effectiveEndDate = new SimpleDateFormat("yyyy-MM-dd").parse(startDateString);
-				} catch (ParseException e) {
-					logger.error(e.getMessage());
-					e.printStackTrace();
-				}
-			}
+		if (!jsonObject.isNull("profile_name")) {
+			String profileName = jsonObject.getString("profile_name");
+			this.profileName = profileName;
 		}
 	}
 
@@ -68,20 +49,12 @@ public class FilterData {
 		this.id = id;
 	}
 
-	public Date getEffectiveStartDate() {
-		return effectiveStartDate;
+	public String getProfileName() {
+		return this.profileName;
 	}
 
-	public void setEffectiveStartDate(Date effectiveStartDate) {
-		this.effectiveStartDate = effectiveStartDate;
-	}
-
-	public Date getEffectiveEndDate() {
-		return effectiveEndDate;
-	}
-
-	public void setEffectiveEndDate(Date effectiveEndDate) {
-		this.effectiveEndDate = effectiveEndDate;
+	public void setProfileName(String profileName) {
+		this.profileName = profileName;
 	}
 
 	public JSONObject getJsonObject() {

@@ -13,4 +13,5 @@ public interface FhirFilterDao {
 	public void delete(Long id);
 	public List<FilterData> get();
 	public FilterData getById(Long id);
+	public FilterData getByName(String name);
 }

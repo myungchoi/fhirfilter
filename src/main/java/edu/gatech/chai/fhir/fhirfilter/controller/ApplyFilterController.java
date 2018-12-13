@@ -1,7 +1,11 @@
 package edu.gatech.chai.fhir.fhirfilter.controller;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,7 +17,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -30,8 +35,9 @@ public class ApplyFilterController {
 	@Autowired
 	FhirFilterDaoImpl fhirFilterDao;
 
-	@GetMapping("")
-	public @ResponseBody ResponseEntity<String> applyFilter(@RequestBody String jsonString) {
+	@PostMapping({"/{ids}", "/", ""})
+	public @ResponseBody ResponseEntity<String> applyFilter(@PathVariable Optional<String> ids,
+			@RequestBody String jsonString) {
 		JSONObject originalJSON = null;
 		try {
 			originalJSON = new JSONObject(jsonString);
@@ -46,12 +52,28 @@ public class ApplyFilterController {
 			return new ResponseEntity<>("Invalid FHIR Resource", HttpStatus.BAD_REQUEST);
 		}
 
-		// Get filter data
-		List<FilterData> filterDataList = fhirFilterDao.getEffectiveFilters(Calendar.getInstance().getTimeInMillis());
+		List<Long> idLongList;
+		if (ids.isPresent()) {
+			List<String> idStringList = Arrays.asList(ids.get().split(","));
+			idLongList = idStringList.stream().map(Long::parseLong).collect(Collectors.toList());
+		} else {
+			idLongList = null;
+		}
+
+		List<FilterData> filterDataList = new ArrayList<FilterData>();
+		if (idLongList == null) {
+			filterDataList = fhirFilterDao.get();
+		} else {
+			filterDataList = new ArrayList<FilterData>();
+			for (Long idLong : idLongList) {
+				// Get filter data
+				filterDataList.add(fhirFilterDao.getById(idLong));
+			}
+		}
 
 		// Work on orginal data and get only resource part and put them in the list.
 		for (FilterData filterData : filterDataList) {
-			JSONArray filterEntryJson = filterData.getJsonObject().getJSONArray("entry");
+			JSONArray filterEntryJson = filterData.getJsonObject().getJSONArray("entry_to_remove");
 			for (int i = 0; i < filterEntryJson.length(); i++) {
 				JSONObject filterJson = filterEntryJson.getJSONObject(i);
 
@@ -65,12 +87,12 @@ public class ApplyFilterController {
 							// No match. move on to next entry.
 							continue;
 						}
-						
+
 						JSONArray filterKeyArray = filterJson.names();
 						if (filterKeyArray.length() <= 1) {
 							// We have no elements in the filter entry resource.
 							// This means that we are removing this resource.
-							System.out.println("Entire Resource Removed:"+resource.get("id"));
+							System.out.println("Entire Resource Removed:" + resource.get("id"));
 							originalEntry.remove(j--);
 							deletedCount++;
 							continue;
@@ -82,12 +104,13 @@ public class ApplyFilterController {
 						}
 					}
 					if (originalJSON.has("total")) {
-						// Do we need to update the total?? If this is paged bundle, this will reduce the size of pageoffset.
+						// Do we need to update the total?? If this is paged bundle, this will reduce
+						// the size of pageoffset.
 						// We may need further discussion on this.
 						int total = originalJSON.getInt("total");
-						originalJSON.put("total", total-deletedCount);						
+						originalJSON.put("total", total - deletedCount);
 					}
-					
+
 				} else {
 					if (processJSONObject(originalJSON, filterJson)) {
 						originalJSON = new JSONObject();
@@ -123,7 +146,7 @@ public class ApplyFilterController {
 			} else {
 				currentKey = currentFilterKey;
 			}
-			
+
 			if ("resourceType".equalsIgnoreCase(currentKey))
 				continue;
 			if (!resource.has(currentKey))
@@ -237,7 +260,8 @@ public class ApplyFilterController {
 		return retv;
 	}
 
-	private boolean processJSONString(String key, JSONObject parentResource, String resource, String filter, boolean replace) {
+	private boolean processJSONString(String key, JSONObject parentResource, String resource, String filter,
+			boolean replace) {
 		if (resource.equalsIgnoreCase(filter)) {
 			return true;
 		} else {
@@ -247,7 +271,8 @@ public class ApplyFilterController {
 		}
 	}
 
-	private boolean processJSONString(int index, JSONArray parentResource, String resource, String filter, boolean replace) {
+	private boolean processJSONString(int index, JSONArray parentResource, String resource, String filter,
+			boolean replace) {
 		if (resource.equalsIgnoreCase(filter)) {
 			return true;
 		} else {
@@ -257,7 +282,8 @@ public class ApplyFilterController {
 		}
 	}
 
-	private boolean processJSONValue(String key, JSONObject parentResource, Object resource, Object filter, boolean replace) {
+	private boolean processJSONValue(String key, JSONObject parentResource, Object resource, Object filter,
+			boolean replace) {
 		if (resource == filter) {
 			return true;
 		} else {
@@ -267,7 +293,8 @@ public class ApplyFilterController {
 		}
 	}
 
-	private boolean processJSONValue(int index, JSONArray parentResource, Object resource, Object filter, boolean replace) {
+	private boolean processJSONValue(int index, JSONArray parentResource, Object resource, Object filter,
+			boolean replace) {
 		if (resource == filter) {
 			return true;
 		} else {
@@ -276,5 +303,5 @@ public class ApplyFilterController {
 			return false;
 		}
 	}
-	
+
 }
