@@ -79,6 +79,20 @@ public class ManageFilterController {
 		}
 	}
 
+	@GetMapping("{name}")
+	public @ResponseBody ResponseEntity<String> getFilterByName(@PathVariable String name) {
+
+		FilterData filterData = fhirFilterDao.getByName(name);
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		if (filterData == null) {
+			return new ResponseEntity<>(headers, HttpStatus.NO_CONTENT);
+		} else {
+			return new ResponseEntity<>(filterData.toString(), headers, HttpStatus.OK);
+		}
+	}
+
 	@PostMapping("")
 	public @ResponseBody ResponseEntity<String> postFilter(@RequestBody String jsonString) {
 		FilterData filterData = null;
@@ -92,8 +106,7 @@ public class ManageFilterController {
 			Long id = Long.valueOf(filterData.getJsonObject().getString("id"));
 			FilterData existingFilterData = fhirFilterDao.getById(id);
 			if (existingFilterData != null) {
-				existingFilterData.setEffectiveStartDate(filterData.getEffectiveStartDate());
-				existingFilterData.setEffectiveEndDate(filterData.getEffectiveEndDate());
+				existingFilterData.setProfileName(filterData.getProfileName());
 				existingFilterData.setJsonObject(filterData.getJsonObject());
 				fhirFilterDao.update(existingFilterData);
 				
@@ -139,8 +152,7 @@ public class ManageFilterController {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
 		
-		existingFilterData.setEffectiveStartDate(filterData.getEffectiveStartDate());
-		existingFilterData.setEffectiveEndDate(filterData.getEffectiveEndDate());
+		existingFilterData.setProfileName(filterData.getProfileName());
 		existingFilterData.setJsonObject(filterData.getJsonObject());
 		fhirFilterDao.update(existingFilterData);
 		
