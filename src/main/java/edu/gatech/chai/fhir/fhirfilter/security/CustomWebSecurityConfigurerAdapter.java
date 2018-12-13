@@ -29,19 +29,19 @@ public class CustomWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.authorizeRequests().antMatchers("/apply", "/apply/*").permitAll().anyRequest().authenticated().and()
+		http.authorizeRequests().antMatchers("/apply", "/apply/**").permitAll().anyRequest().authenticated().and()
 				.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
 
-		http.authorizeRequests().antMatchers("/manage", "/manage/*").hasAuthority("ADMIN");
+		http.authorizeRequests().antMatchers("/manage", "/manage/**").hasAuthority("ADMIN");
 
 		http.addFilterAfter(new CustomFilter(), BasicAuthenticationFilter.class);
 	}
 
 	@Override
 	public void configure(WebSecurity webSecurity) throws Exception {
-		webSecurity.ignoring().antMatchers(HttpMethod.POST, "/manage", "/manage/*")
-				.antMatchers(HttpMethod.PUT, "/manage", "/manage/*")
-				.antMatchers(HttpMethod.DELETE, "/manage", "/manage/*");
+		webSecurity.ignoring().antMatchers(HttpMethod.POST, "/manage", "/manage/**")
+				.antMatchers(HttpMethod.PUT, "/manage", "/manage/**")
+				.antMatchers(HttpMethod.DELETE, "/manage", "/manage/**");
 	}
 
 	@Bean
