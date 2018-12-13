@@ -41,7 +41,6 @@ public class ManageFilterController {
 	@GetMapping("")
 	public @ResponseBody ResponseEntity<String> getFilter() {
 		List<FilterData> filterDatas;
-		
 		filterDatas = fhirFilterDao.get();
 		
 		DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
