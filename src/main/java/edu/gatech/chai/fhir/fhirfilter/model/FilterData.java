@@ -35,8 +35,8 @@ public class FilterData {
 			setId(Long.valueOf(id));
 		}
 
-		if (!jsonObject.isNull("profile_name")) {
-			String profileName = jsonObject.getString("profile_name");
+		if (!jsonObject.isNull("profileName")) {
+			String profileName = jsonObject.getString("profileName");
 			this.profileName = profileName;
 		}
 	}

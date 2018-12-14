@@ -2,7 +2,6 @@ package edu.gatech.chai.fhir.fhirfilter.controller;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -73,7 +72,7 @@ public class ApplyFilterController {
 
 		// Work on orginal data and get only resource part and put them in the list.
 		for (FilterData filterData : filterDataList) {
-			JSONArray filterEntryJson = filterData.getJsonObject().getJSONArray("entry_to_remove");
+			JSONArray filterEntryJson = filterData.getJsonObject().getJSONArray("entryToRemove");
 			for (int i = 0; i < filterEntryJson.length(); i++) {
 				JSONObject filterJson = filterEntryJson.getJSONObject(i);
 
@@ -155,7 +154,7 @@ public class ApplyFilterController {
 			// If the object for the currentKey is null, it means we remove this object.
 			// Don't worry about FHIR requirement. We just remove it.
 			if (filter.isNull(currentFilterKey)) {
-				Object removed = resource.remove(currentKey);
+				resource.remove(currentKey);
 				continue;
 			}
 
