@@ -168,7 +168,10 @@ public class ManageFilterController {
 			return new ResponseEntity<>("id="+idLong+" is not found", HttpStatus.NOT_FOUND);
 		} else {
 			fhirFilterDao.delete(idLong);
-			return new ResponseEntity<>(filterData.toString(), HttpStatus.OK);
+			HttpHeaders headers = new HttpHeaders();
+			headers.setContentType(MediaType.APPLICATION_JSON);
+
+			return new ResponseEntity<>(filterData.toString(), headers, HttpStatus.OK);
 		}
 	}
 }
