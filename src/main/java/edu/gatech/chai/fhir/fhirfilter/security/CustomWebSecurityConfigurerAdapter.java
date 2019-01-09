@@ -28,7 +28,7 @@ public class CustomWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
 
 	@Override
 	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable().authorizeRequests().antMatchers("/apply", "/apply/**").permitAll().anyRequest().authenticated().and()
+		http.cors().and().csrf().disable().authorizeRequests().antMatchers("/apply", "/apply/**").permitAll().anyRequest().authenticated().and()
 				.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
 
 		http.sessionManagement()
