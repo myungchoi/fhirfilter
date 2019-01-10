@@ -160,7 +160,7 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 	@Override
 	public FilterData getByName(String name) {
 		FilterData filterData = null;
-		String sql = "SELECT * FROM filterdata where profile_name = '?'";
+		String sql = "SELECT * FROM filterdata where profile_name = ?";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, name);
