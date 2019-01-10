@@ -102,9 +102,16 @@ public class ManageFilterController {
 			return new ResponseEntity<>("Incorrect JSON: " + jsonString, HttpStatus.BAD_REQUEST);
 		}
 
+		// Check if the profile exists.
+		FilterData existingFilterData = fhirFilterDao.getByName(filterData.getProfileName());
+		if (existingFilterData != null) {
+			// This is error. 
+			return new ResponseEntity<>("profile ("+filterData.getProfileName()+") exists.", HttpStatus.CONFLICT);
+		}
+		
 		if (filterData.getJsonObject().has("id")) {
 			Long id = Long.valueOf(filterData.getJsonObject().getString("id"));
-			FilterData existingFilterData = fhirFilterDao.getById(id);
+			existingFilterData = fhirFilterDao.getById(id);
 			if (existingFilterData != null) {
 				existingFilterData.setProfileName(filterData.getProfileName());
 				existingFilterData.setJsonObject(filterData.getJsonObject());

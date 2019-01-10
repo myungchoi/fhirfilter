@@ -44,20 +44,21 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 		int insertedId = 0;
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, filterData.getProfileName());
-			
+
 			// remove id from json data.
 			filterData.getJsonObject().remove("id");
 			pstmt.setString(2, filterData.toString());
-			
-		    if (pstmt.executeUpdate() > 0) {
-	            // Retrieves any auto-generated keys created as a result of executing this Statement object
-	            java.sql.ResultSet generatedKeys = pstmt.getGeneratedKeys();
-	            if ( generatedKeys.next() ) {
-	            	insertedId = generatedKeys.getInt(1);
-	            }
-	        }
-		    
-			logger.info("New filter data (id="+insertedId+") added");
+
+			if (pstmt.executeUpdate() > 0) {
+				// Retrieves any auto-generated keys created as a result of executing this
+				// Statement object
+				java.sql.ResultSet generatedKeys = pstmt.getGeneratedKeys();
+				if (generatedKeys.next()) {
+					insertedId = generatedKeys.getInt(1);
+				}
+			}
+
+			logger.info("New filter data (id=" + insertedId + ") added");
 		} catch (SQLException e) {
 			logger.error(e.getMessage());
 			e.printStackTrace();
@@ -69,26 +70,26 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 	@Override
 	public void delete(Long id) {
 		String sql = "DELETE FROM filterdata where id = ?";
-		
+
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setLong(1, id);
 			pstmt.executeUpdate();
-			logger.info("filter data ("+id+") deleted");
+			logger.info("filter data (" + id + ") deleted");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-		}		
+		}
 	}
 
 	public void deleteByName(String name) {
 		String sql = "DELETE FROM filterdata where profile_name = '?'";
-		
+
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, name);
 			pstmt.executeUpdate();
-			logger.info("filter data ("+name+") deleted");
+			logger.info("filter data (" + name + ") deleted");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-		}		
+		}
 	}
 
 	protected FilterData setFilterData(ResultSet rs) throws SQLException {
@@ -100,10 +101,10 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 
 		return filterData;
 	}
-	
+
 	@Override
 	public FilterData getById(Long id) {
-		FilterData filterData = null;		
+		FilterData filterData = null;
 		String sql = "SELECT * FROM filterdata where id = ?";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -112,10 +113,10 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 			if (rs.next()) {
 				filterData = setFilterData(rs);
 			}
-			logger.info("filter data ("+id+") selected");
+			logger.info("filter data (" + id + ") selected");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-		}		
+		}
 
 		return filterData;
 	}
@@ -123,7 +124,7 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 	@Override
 	public List<FilterData> get() {
 		List<FilterData> filterDatas = new ArrayList<FilterData>();
-		
+
 		String sql = "SELECT * FROM filterdata";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -132,10 +133,10 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 				FilterData filterData = setFilterData(rs);
 				filterDatas.add(filterData);
 			}
-			logger.info(filterDatas.size()+" filter data obtained");
+			logger.info(filterDatas.size() + " filter data obtained");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-		}		
+		}
 
 		return filterDatas;
 	}
@@ -149,16 +150,16 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 			pstmt.setString(2, filterData.toString());
 			pstmt.setLong(3, filterData.getId());
 			pstmt.executeUpdate();
-			logger.info("filter data ("+filterData.getId()+") updated");
+			logger.info("filter data (" + filterData.getId() + ") updated");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
-		
+
 	}
-	
+
 	@Override
 	public FilterData getByName(String name) {
-		FilterData filterData = null;		
+		FilterData filterData = null;
 		String sql = "SELECT * FROM filterdata where profile_name = '?'";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -167,12 +168,13 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 			if (rs.next()) {
 				filterData = setFilterData(rs);
 			}
-			logger.info("filter data ("+name+") selected");
+			logger.info("filter data (" + name + ") selected");
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
-		}		
+		}
 
-		return filterData;	}
+		return filterData;
+	}
 
 //	public List<FilterData> getEffectiveFilters(Long now) {
 //		List<FilterData> filterDatas = new ArrayList<FilterData>();
