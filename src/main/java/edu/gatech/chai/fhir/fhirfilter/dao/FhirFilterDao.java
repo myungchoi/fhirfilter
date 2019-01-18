@@ -10,8 +10,8 @@ public interface FhirFilterDao {
 	
 	public int save(FilterData filterData);
 	public void update(FilterData filterData);
-	public void delete(Long id);
+	public void delete(Integer id);
 	public List<FilterData> get();
-	public FilterData getById(Long id);
+	public FilterData getById(Integer id);
 	public FilterData getByName(String name);
 }

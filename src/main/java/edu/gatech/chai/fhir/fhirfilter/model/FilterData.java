@@ -1,72 +1,137 @@
 package edu.gatech.chai.fhir.fhirfilter.model;
 
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
+import java.util.Objects;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import java.util.ArrayList;
+import java.util.List;
+import org.springframework.validation.annotation.Validated;
+import javax.validation.Valid;
+import javax.validation.constraints.*;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+/**
+ * FilterData
+ */
+@Validated
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2019-01-16T14:28:58.456247-05:00[America/New_York]")
+public class FilterData   {
+  @JsonProperty("id")
+  private Integer id = null;
+
+  @JsonProperty("profileName")
+  private String profileName = null;
+
+  @JsonProperty("entryToRemove")
+  @Valid
+  private List<Object> entryToRemove = null;
+
+  public FilterData id(Integer id) {
+    this.id = id;
+    return this;
+  }
+
+  /**
+   * Get id
+   * @return id
+  **/
+  @ApiModelProperty(value = "")
+
+  public Integer getId() {
+    return id;
+  }
+
+  public void setId(Integer id) {
+    this.id = id;
+  }
+
+  public FilterData profileName(String profileName) {
+    this.profileName = profileName;
+    return this;
+  }
+
+  /**
+   * Get profileName
+   * @return profileName
+  **/
+  @ApiModelProperty(value = "")
+
+  public String getProfileName() {
+    return profileName;
+  }
+
+  public void setProfileName(String profileName) {
+    this.profileName = profileName;
+  }
+
+  public FilterData entryToRemove(List<Object> entryToRemove) {
+    this.entryToRemove = entryToRemove;
+    return this;
+  }
+
+  public FilterData addEntryToRemoveItem(Object entryToRemoveItem) {
+    if (this.entryToRemove == null) {
+      this.entryToRemove = new ArrayList<Object>();
+    }
+    this.entryToRemove.add(entryToRemoveItem);
+    return this;
+  }
+
+  /**
+   * Get entryToRemove
+   * @return entryToRemove
+  **/
+  @ApiModelProperty(value = "")
+
+  public List<Object> getEntryToRemove() {
+    return entryToRemove;
+  }
+
+  public void setEntryToRemove(List<Object> entryToRemove) {
+    this.entryToRemove = entryToRemove;
+  }
 
 
-public class FilterData {
-	final static Logger logger = LoggerFactory.getLogger(FilterData.class);
+  @Override
+  public boolean equals(java.lang.Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    FilterData filterData = (FilterData) o;
+    return Objects.equals(this.id, filterData.id) &&
+        Objects.equals(this.profileName, filterData.profileName) &&
+        Objects.equals(this.entryToRemove, filterData.entryToRemove);
+  }
 
-	private Long id;
-	private String profileName;
-	private JSONObject jsonObject;
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, profileName, entryToRemove);
+  }
 
-	public FilterData(String jsonString) {
-		if (jsonString == null || jsonString.isEmpty()) {
-			throw new IllegalArgumentException("JSON String cannot be null or empty");
-		}
-		
-		try {
-			this.jsonObject = new JSONObject(jsonString);
-		} catch (JSONException e) {
-			logger.error(e.getMessage());
-			throw new JSONException(e);
-		}
+  @Override
+  public String toString() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("class FilterData {\n");
+    
+    sb.append("    id: ").append(toIndentedString(id)).append("\n");
+    sb.append("    profileName: ").append(toIndentedString(profileName)).append("\n");
+    sb.append("    entryToRemove: ").append(toIndentedString(entryToRemove)).append("\n");
+    sb.append("}");
+    return sb.toString();
+  }
 
-		// Set meta information.
-		if (!jsonObject.isNull("id")) {
-			String id = jsonObject.getString("id");
-			setId(Long.valueOf(id));
-		}
-
-		if (!jsonObject.isNull("profileName")) {
-			String profileName = jsonObject.getString("profileName");
-			this.profileName = profileName;
-		}
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public String getProfileName() {
-		return this.profileName;
-	}
-
-	public void setProfileName(String profileName) {
-		this.profileName = profileName;
-	}
-
-	public JSONObject getJsonObject() {
-		return jsonObject;
-	}
-
-	public void setJsonObject(JSONObject jsonObject) {
-		this.jsonObject = jsonObject;
-	}
-
-	public String toString() {
-		return jsonObject.toString();
-	}
-
+  /**
+   * Convert the given object to string with each line indented by 4 spaces
+   * (except the first line).
+   */
+  private String toIndentedString(java.lang.Object o) {
+    if (o == null) {
+      return "null";
+    }
+    return o.toString().replace("\n", "\n    ");
+  }
 }

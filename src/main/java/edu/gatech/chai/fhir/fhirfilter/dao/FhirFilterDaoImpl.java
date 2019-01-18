@@ -8,6 +8,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -39,15 +40,13 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 
 	@Override
 	public int save(FilterData filterData) {
-		String sql = "INSERT INTO filterdata (profile_name, json_string) values (?,?)";
+		String sql = "INSERT INTO filterdata (profile_name, entry_to_remove) values (?,?)";
 
 		int insertedId = 0;
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, filterData.getProfileName());
-
-			// remove id from json data.
-			filterData.getJsonObject().remove("id");
-			pstmt.setString(2, filterData.toString());
+			JSONArray jsonArray = new JSONArray(filterData.getEntryToRemove());
+			pstmt.setString(2, jsonArray.toString());
 
 			if (pstmt.executeUpdate() > 0) {
 				// Retrieves any auto-generated keys created as a result of executing this
@@ -68,11 +67,11 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 	}
 
 	@Override
-	public void delete(Long id) {
+	public void delete(Integer id) {
 		String sql = "DELETE FROM filterdata where id = ?";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
-			pstmt.setLong(1, id);
+			pstmt.setInt(1, id);
 			pstmt.executeUpdate();
 			logger.info("filter data (" + id + ") deleted");
 		} catch (SQLException e) {
@@ -93,17 +92,18 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 	}
 
 	protected FilterData setFilterData(ResultSet rs) throws SQLException {
-		String jsonString = rs.getString("json_string");
-		FilterData filterData = new FilterData(jsonString);
+		FilterData filterData = new FilterData();
+		filterData.setId(rs.getInt("id"));
 		filterData.setProfileName(rs.getString("profile_name"));
-		filterData.setId(rs.getLong("id"));
-		filterData.getJsonObject().put("id", rs.getString("id"));
+		
+		JSONArray jsonArray = new JSONArray(rs.getString("entry_to_remove"));
+		filterData.setEntryToRemove(jsonArray.toList());
 
 		return filterData;
 	}
 
 	@Override
-	public FilterData getById(Long id) {
+	public FilterData getById(Integer id) {
 		FilterData filterData = null;
 		String sql = "SELECT * FROM filterdata where id = ?";
 
@@ -143,14 +143,15 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 
 	@Override
 	public void update(FilterData filterData) {
-		String sql = "UPDATE filterdata SET profile_name=?, json_string=? where id=?";
+		String sql = "UPDATE filterdata SET profile_name=?, entry_to_remove=? where id=?";
 
 		try (Connection conn = this.connect(); PreparedStatement pstmt = conn.prepareStatement(sql)) {
 			pstmt.setString(1, filterData.getProfileName());
-			pstmt.setString(2, filterData.toString());
+			JSONArray jsonArray = new JSONArray(filterData.getEntryToRemove());
+			pstmt.setString(2, jsonArray.toString());
 			pstmt.setLong(3, filterData.getId());
 			pstmt.executeUpdate();
-			logger.info("filter data (" + filterData.getId() + ") updated");
+			logger.info("filter data (" + filterData.getId() + ") updated with "+jsonArray.toString());
 		} catch (SQLException e) {
 			System.out.println(e.getMessage());
 		}
