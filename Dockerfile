@@ -1,5 +1,5 @@
 #Build the Maven project
-FROM maven:3.5.2-alpine as builder
+FROM openjdk:8-jdk-alpine as builder
 COPY . /usr/src/app
 WORKDIR /usr/src/app
 RUN ./mvnw package
