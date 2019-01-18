@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>edu.gatech.chai.fhir</groupId>
 	<artifactId>fhirfilter</artifactId>
-	<packaging>war</packaging>
+	<packaging>jar</packaging>
 	<name>fhirfilter</name>
 	<version>0.0.1</version>
 	<properties>
