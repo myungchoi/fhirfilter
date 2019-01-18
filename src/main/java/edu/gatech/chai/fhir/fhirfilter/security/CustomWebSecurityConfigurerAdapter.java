@@ -18,26 +18,46 @@ public class CustomWebSecurityConfigurerAdapter extends WebSecurityConfigurerAda
 	@Autowired
 	private MyBasicAuthenticationEntryPoint authenticationEntryPoint;
 
+	@Override
+	protected void configure(HttpSecurity http) throws Exception {
+		http.cors().and().csrf().disable().authorizeRequests()
+			.antMatchers("/manage/**").authenticated()
+			.anyRequest().permitAll().and()
+			.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
+		
+		http.sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+
+		http.addFilterAfter(new CustomFilter(), BasicAuthenticationFilter.class);
+	}
+
 	@Autowired
 	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
 		String user = System.getenv("BASIC_AUTH_USER");
 		String pass = System.getenv("BASIC_AUTH_PASSWORD");
 
-		auth.inMemoryAuthentication().withUser(user).password(passwordEncoder().encode(pass)).authorities("ROLE_ADMIN");
+//		auth.inMemoryAuthentication().withUser(user).password(passwordEncoder().encode(pass)).roles("USER", "ADMIN");
+		auth.inMemoryAuthentication().withUser(user).password(pass).roles("USER", "ADMIN");
+
+		//		auth.inMemoryAuthentication().withUser(user).password(pass).roles("USER");
+
+//		System.out.println("User:"+user+", Password:"+pass);
+//		auth.inMemoryAuthentication().withUser(user).password(pass).roles("USER")
+//        .and().withUser(user).password(pass).roles("USER", "ADMIN");
+//		auth.inMemoryAuthentication().withUser(user).password(passwordEncoder().encode(pass)).authorities("ROLE_ADMIN");
 	}
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http.cors().and().csrf().disable().authorizeRequests().antMatchers("/apply", "/apply/**").permitAll().anyRequest().authenticated().and()
-				.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
-
-		http.sessionManagement()
-	    .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
-		
-//		http.authorizeRequests().antMatchers("/manage", "/manage/**").hasAuthority("ADMIN");
-
-		http.addFilterAfter(new CustomFilter(), BasicAuthenticationFilter.class);
-	}
+//	@Override
+//	protected void configure(HttpSecurity http) throws Exception {
+//		http.cors().and().csrf().disable().authorizeRequests().antMatchers("/apply", "/apply/**", "/swagger-ui.html").permitAll().anyRequest().authenticated().and()
+//				.httpBasic().authenticationEntryPoint(authenticationEntryPoint);
+//
+//		http.sessionManagement()
+//	    .sessionCreationPolicy(SessionCreationPolicy.STATELESS);
+//		
+////		http.authorizeRequests().antMatchers("/manage", "/manage/**").hasAuthority("ADMIN");
+//
+//		http.addFilterAfter(new CustomFilter(), BasicAuthenticationFilter.class);
+//	}
 
 //	@Override
 //	public void configure(WebSecurity webSecurity) throws Exception {

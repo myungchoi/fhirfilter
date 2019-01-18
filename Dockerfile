@@ -9,7 +9,7 @@ FROM tomcat:alpine
 RUN apk update
 RUN apk add zip
 
-# Copy GT-FHIR war file to webapps.
+# Copy fhirFilter war file to webapps.
 COPY --from=builder /usr/src/app/target/fhirfilter.war $CATALINA_HOME/webapps/fhirfilter.war
 
 EXPOSE 8080

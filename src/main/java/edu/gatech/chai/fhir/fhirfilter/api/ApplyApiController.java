@@ -1,47 +1,64 @@
-package edu.gatech.chai.fhir.fhirfilter.controller;
+package edu.gatech.chai.fhir.fhirfilter.api;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import edu.gatech.chai.fhir.fhirfilter.dao.FhirFilterDaoImpl;
+import edu.gatech.chai.fhir.fhirfilter.model.FilterData;
+import io.swagger.annotations.*;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
-import edu.gatech.chai.fhir.fhirfilter.dao.FhirFilterDaoImpl;
-import edu.gatech.chai.fhir.fhirfilter.model.FilterData;
+import javax.validation.constraints.*;
+import javax.validation.Valid;
+import javax.servlet.http.HttpServletRequest;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+@javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2019-01-16T14:28:58.456247-05:00[America/New_York]")
+@Controller
+public class ApplyApiController implements ApplyApi {
 
-@RestController
-@RequestMapping("/apply")
-public class ApplyFilterController {
-	final static Logger logger = LoggerFactory.getLogger(ApplyFilterController.class);
+    private static final Logger log = LoggerFactory.getLogger(ApplyApiController.class);
 
-	@Autowired
+    private final ObjectMapper objectMapper;
+
+    private final HttpServletRequest request;
+
+    @org.springframework.beans.factory.annotation.Autowired
 	FhirFilterDaoImpl fhirFilterDao;
+    
+    @org.springframework.beans.factory.annotation.Autowired
+    public ApplyApiController(ObjectMapper objectMapper, HttpServletRequest request) {
+        this.objectMapper = objectMapper;
+        this.request = request;
+    }
 
-	@PostMapping({"/{ids}", "/", ""})
-	public @ResponseBody ResponseEntity<String> applyFilter(@PathVariable Optional<String> ids,
-			@RequestBody String jsonString) {
+    public ResponseEntity<String> applyIdsPost(@ApiParam(value = "" ,required=true )  @Valid @RequestBody String body,@ApiParam(value = "Profile IDs to be applied (separated by comma).",required=true) @PathVariable("ids") String ids) {
+        String accept = request.getHeader("Accept");
+
 		JSONObject originalJSON = null;
 		try {
-			originalJSON = new JSONObject(jsonString);
+			originalJSON = new JSONObject(body);
 		} catch (JSONException e) {
-			logger.error(e.getMessage());
+			log.error(e.getMessage());
 			e.printStackTrace();
 			return new ResponseEntity<>("Incorrect JSON Format", HttpStatus.BAD_REQUEST);
 		}
@@ -51,28 +68,59 @@ public class ApplyFilterController {
 			return new ResponseEntity<>("Invalid FHIR Resource", HttpStatus.BAD_REQUEST);
 		}
 
-		List<Long> idLongList;
-		if (ids.isPresent()) {
-			List<String> idStringList = Arrays.asList(ids.get().split(","));
-			idLongList = idStringList.stream().map(Long::parseLong).collect(Collectors.toList());
+		List<Integer> idIntList;
+		if (ids != null && !ids.isEmpty()) {
+			List<String> idStringList = Arrays.asList(ids.split(",")); 
+			idIntList = idStringList.stream().map(Integer::valueOf).collect(Collectors.toList());
 		} else {
-			idLongList = null;
+			idIntList = null;
+		}
+		
+		String retv = applyPostProcess(idIntList, originalJSON);
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		return new ResponseEntity<>(retv, headers, HttpStatus.OK);
+    }
+
+    public ResponseEntity<String> applyPost(@ApiParam(value = "" ,required=true )  @Valid @RequestBody String body) {
+		JSONObject originalJSON = null;
+		try {
+			originalJSON = new JSONObject(body);
+		} catch (JSONException e) {
+			log.error(e.getMessage());
+			e.printStackTrace();
+			return new ResponseEntity<>("Incorrect JSON Format", HttpStatus.BAD_REQUEST);
 		}
 
+		// Received JSON should be a FHIR resource.
+		if (!originalJSON.has("resourceType")) {
+			return new ResponseEntity<>("Invalid FHIR Resource", HttpStatus.BAD_REQUEST);
+		}
+
+		String retv = applyPostProcess(null, originalJSON);
+		
+		HttpHeaders headers = new HttpHeaders();
+		headers.setContentType(MediaType.APPLICATION_JSON);
+
+		return new ResponseEntity<>(retv, headers, HttpStatus.OK);
+    }
+
+    private String applyPostProcess(List<Integer> idIntList, JSONObject originalJSON) {
 		List<FilterData> filterDataList = new ArrayList<FilterData>();
-		if (idLongList == null) {
+		if (idIntList == null || idIntList.isEmpty()) {
 			filterDataList = fhirFilterDao.get();
 		} else {
-			filterDataList = new ArrayList<FilterData>();
-			for (Long idLong : idLongList) {
+			for (Integer id : idIntList) {
 				// Get filter data
-				filterDataList.add(fhirFilterDao.getById(idLong));
+				filterDataList.add(fhirFilterDao.getById(id));
 			}
 		}
 
 		// Work on orginal data and get only resource part and put them in the list.
 		for (FilterData filterData : filterDataList) {
-			JSONArray filterEntryJson = filterData.getJsonObject().getJSONArray("entryToRemove");
+			JSONArray filterEntryJson = new JSONArray(filterData.getEntryToRemove());
 			for (int i = 0; i < filterEntryJson.length(); i++) {
 				JSONObject filterJson = filterEntryJson.getJSONObject(i);
 
@@ -91,13 +139,14 @@ public class ApplyFilterController {
 						if (filterKeyArray.length() <= 1) {
 							// We have no elements in the filter entry resource.
 							// This means that we are removing this resource.
-							System.out.println("Entire Resource Removed:" + resource.get("id"));
+							log.info("Resource level removal: " + resource.getString("resourceType") + "(" + resource.get("id") + ")");
 							originalEntry.remove(j--);
 							deletedCount++;
 							continue;
 						}
 
 						if (processJSONObject(resource, filterJson)) {
+							log.info("A resource removed: " + resource.getString("resourceType") + "(" + resource.get("id") + ")");
 							originalEntry.remove(j--);
 							deletedCount++;
 						}
@@ -118,12 +167,9 @@ public class ApplyFilterController {
 			}
 		}
 
-		HttpHeaders headers = new HttpHeaders();
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		return new ResponseEntity<>(originalJSON.toString(), headers, HttpStatus.OK);
-	}
-
+		return originalJSON.toString();
+    }
+    
 	/***
 	 * processJSONObject: process JSON Object with a matching JSON filter object.
 	 * 
@@ -302,5 +348,4 @@ public class ApplyFilterController {
 			return false;
 		}
 	}
-
 }
