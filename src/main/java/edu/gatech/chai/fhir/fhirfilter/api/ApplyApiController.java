@@ -162,6 +162,7 @@ public class ApplyApiController implements ApplyApi {
 				} else {
 					if (processJSONObject(originalJSON, filterJson)) {
 						originalJSON = new JSONObject();
+						break;
 					}
 				}
 			}
