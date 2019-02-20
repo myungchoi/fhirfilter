@@ -91,12 +91,12 @@ public class ApplyApiController implements ApplyApi {
 		} catch (JSONException e) {
 			log.error(e.getMessage());
 			e.printStackTrace();
-			return new ResponseEntity<>("Incorrect JSON Format", HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>("{\"error\": \"Incorrect JSON Format\"", HttpStatus.BAD_REQUEST);
 		}
 
 		// Received JSON should be a FHIR resource.
 		if (!originalJSON.has("resourceType")) {
-			return new ResponseEntity<>("Invalid FHIR Resource", HttpStatus.BAD_REQUEST);
+			return new ResponseEntity<>("{\"error\": \"Invalid FHIR Resource\"", HttpStatus.BAD_REQUEST);
 		}
 
 		String retv = applyPostProcess(null, originalJSON);
@@ -124,7 +124,7 @@ public class ApplyApiController implements ApplyApi {
 			for (int i = 0; i < filterEntryJson.length(); i++) {
 				JSONObject filterJson = filterEntryJson.getJSONObject(i);
 
-				if ("Bundle".equals(originalJSON.get("resourceType"))) {
+				if ("Bundle".equals(originalJSON.getString("resourceType"))) {
 					JSONArray originalEntry = originalJSON.getJSONArray("entry");
 					int deletedCount = 0;
 					for (int j = 0; j < originalEntry.length(); j++) {
