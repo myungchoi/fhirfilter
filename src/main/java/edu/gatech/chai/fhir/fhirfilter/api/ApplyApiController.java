@@ -119,6 +119,7 @@ public class ApplyApiController implements ApplyApi {
 		}
 
 		// Work on orginal data and get only resource part and put them in the list.
+		boolean done = false;
 		for (FilterData filterData : filterDataList) {
 			JSONArray filterEntryJson = new JSONArray(filterData.getEntryToRemove());
 			for (int i = 0; i < filterEntryJson.length(); i++) {
@@ -158,14 +159,22 @@ public class ApplyApiController implements ApplyApi {
 						int total = originalJSON.getInt("total");
 						originalJSON.put("total", total - deletedCount);
 					}
+					
+					if (originalEntry.length() == 0) {
+						originalJSON.remove("entry");
+						done = true;
+						break;
+					}
 
 				} else {
 					if (processJSONObject(originalJSON, filterJson)) {
 						originalJSON = new JSONObject();
+						done = true;
 						break;
 					}
 				}
 			}
+			if (done == true) break;
 		}
 
 		return originalJSON.toString();
