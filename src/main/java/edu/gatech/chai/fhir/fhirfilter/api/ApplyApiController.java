@@ -1,5 +1,6 @@
 package edu.gatech.chai.fhir.fhirfilter.api;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import edu.gatech.chai.fhir.fhirfilter.dao.FhirFilterDaoImpl;
@@ -77,7 +78,10 @@ public class ApplyApiController implements ApplyApi {
 		}
 		
 		String retv = applyPostProcess(idIntList, originalJSON);
-		
+		if (retv == null) {
+			return new ResponseEntity<>("Internal Filter Data Error", HttpStatus.INTERNAL_SERVER_ERROR); 
+		}
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -100,7 +104,10 @@ public class ApplyApiController implements ApplyApi {
 		}
 
 		String retv = applyPostProcess(null, originalJSON);
-		
+		if (retv == null) {
+			return new ResponseEntity<>("Internal Filter Data Error", HttpStatus.INTERNAL_SERVER_ERROR); 
+		}
+
 		HttpHeaders headers = new HttpHeaders();
 		headers.setContentType(MediaType.APPLICATION_JSON);
 
@@ -121,7 +128,18 @@ public class ApplyApiController implements ApplyApi {
 		// Work on orginal data and get only resource part and put them in the list.
 		boolean done = false;
 		for (FilterData filterData : filterDataList) {
-			JSONArray filterEntryJson = new JSONArray(filterData.getEntryToRemove());
+//			JSONArray filterEntryJson = new JSONArray(filterData.getEntryToRemove());
+			String jsonString;
+			try {
+				jsonString = objectMapper.writeValueAsString(filterData.getEntryToRemove());
+			} catch (JsonProcessingException e) {
+				log.error(e.getMessage());
+				e.printStackTrace();
+				
+				return null;
+			}
+			JSONArray filterEntryJson = new JSONArray(jsonString);
+			
 			for (int i = 0; i < filterEntryJson.length(); i++) {
 				JSONObject filterJson = filterEntryJson.getJSONObject(i);
 
@@ -211,6 +229,10 @@ public class ApplyApiController implements ApplyApi {
 			// Don't worry about FHIR requirement. We just remove it.
 			if (filter.isNull(currentFilterKey)) {
 				resource.remove(currentKey);
+				
+				// if any filter value is null, then we should not remove this resource
+				// because we can't count null match as a match
+				retv = false;
 				continue;
 			}
 
