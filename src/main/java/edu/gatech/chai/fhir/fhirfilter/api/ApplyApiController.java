@@ -184,6 +184,11 @@ public class ApplyApiController implements ApplyApi {
 					}
 
 				} else {
+					if (!filterJson.getString("resourceType").equals(originalJSON.getString("resourceType"))) {
+						// No match. move on to next entry.
+						continue;
+					}
+					
 					if (processJSONObject(originalJSON, filterJson)) {
 						originalJSON = new JSONObject();
 						done = true;
