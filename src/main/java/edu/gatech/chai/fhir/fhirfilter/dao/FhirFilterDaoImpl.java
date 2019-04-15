@@ -51,9 +51,6 @@ public class FhirFilterDaoImpl implements FhirFilterDao {
 			ObjectMapper objectMapper = new ObjectMapper();
 			String json = objectMapper.writeValueAsString(filterData.getEntryToRemove());
 			pstmt.setString(2, json);
-			
-//			JSONArray jsonArray = new JSONArray(filterData.getEntryToRemove());
-//			pstmt.setString(2, jsonArray.toString());
 
 			if (pstmt.executeUpdate() > 0) {
 				// Retrieves any auto-generated keys created as a result of executing this

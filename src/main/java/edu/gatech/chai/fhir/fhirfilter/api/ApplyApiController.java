@@ -128,7 +128,6 @@ public class ApplyApiController implements ApplyApi {
 		// Work on orginal data and get only resource part and put them in the list.
 		boolean done = false;
 		for (FilterData filterData : filterDataList) {
-//			JSONArray filterEntryJson = new JSONArray(filterData.getEntryToRemove());
 			String jsonString;
 			try {
 				jsonString = objectMapper.writeValueAsString(filterData.getEntryToRemove());
