@@ -21,12 +21,12 @@ public class SwaggerDocumentationConfig {
 
     ApiInfo apiInfo() {
         return new ApiInfoBuilder()
-            .title("Access Filter Service")
+            .title("Fhir Filter Service")
             .description("This is FHIR Filter API to manage filter data.")
             .license("Apache 2.0")
             .licenseUrl("http://www.apache.org/licenses/LICENSE-2.0.html")
             .termsOfServiceUrl("")
-            .version("0.0.1-oas3")
+            .version("0.1.0")
             .contact(new Contact("","", "myung.choi@gtri.gatech.edu"))
             .build();
     }

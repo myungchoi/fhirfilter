@@ -2,6 +2,7 @@ package edu.gatech.chai.fhir.fhirfilter.api;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
 
 import edu.gatech.chai.fhir.fhirfilter.dao.FhirFilterDaoImpl;
 import edu.gatech.chai.fhir.fhirfilter.model.FilterData;
@@ -24,17 +25,18 @@ import javax.validation.Valid;
 import javax.servlet.http.HttpServletRequest;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 @javax.annotation.Generated(value = "io.swagger.codegen.v3.generators.java.SpringCodegen", date = "2019-01-16T14:28:58.456247-05:00[America/New_York]")
 @Controller
 public class ApplyApiController implements ApplyApi {
 
     private static final Logger log = LoggerFactory.getLogger(ApplyApiController.class);
-
     private final ObjectMapper objectMapper;
-
-    private final HttpServletRequest request;
+//    private final HttpServletRequest request;
 
     @org.springframework.beans.factory.annotation.Autowired
 	FhirFilterDaoImpl fhirFilterDao;
@@ -42,11 +44,18 @@ public class ApplyApiController implements ApplyApi {
     @org.springframework.beans.factory.annotation.Autowired
     public ApplyApiController(ObjectMapper objectMapper, HttpServletRequest request) {
         this.objectMapper = objectMapper;
-        this.request = request;
+//        this.request = request;
     }
 
+    enum MatchType {
+    	REPLACE,
+    	REGEX_MATCH,
+    	REGEX_REPLACE,
+    	VALUE_MATCH
+    }
+    
     public ResponseEntity<String> applyIdsPost(@ApiParam(value = "" ,required=true )  @Valid @RequestBody String body,@ApiParam(value = "Profile IDs to be applied (separated by comma).",required=true) @PathVariable("ids") String ids) {
-        String accept = request.getHeader("Accept");
+//        String accept = request.getHeader("Accept");
 
 		JSONObject originalJSON = null;
 		try {
@@ -204,16 +213,25 @@ public class ApplyApiController implements ApplyApi {
 	private boolean processJSONObject(JSONObject resource, JSONObject filter) {
 		JSONArray filterKeyArray = filter.names();
 
+		Map<String, Object> replacedMap = new HashMap<String, Object>();
+		
 		boolean retv = true;
 		for (int i = 0; i < filterKeyArray.length(); i++) {
-			boolean replace = false; // set this to true if you want to replace all non matching primitive value.
+			MatchType matchType;
 
 			String currentFilterKey = (String) filterKeyArray.get(i);
 			String currentKey;
 			if (currentFilterKey.startsWith("^")) {
-				replace = true;
+				matchType = MatchType.REPLACE;
+				currentKey = currentFilterKey.substring(1);
+			} else if (currentFilterKey.startsWith("@^")) {
+				matchType = MatchType.REGEX_REPLACE;
+				currentKey = currentFilterKey.substring(2);
+			} else if (currentFilterKey.startsWith("@")){
+				matchType = MatchType.REGEX_MATCH;
 				currentKey = currentFilterKey.substring(1);
 			} else {
+				matchType = MatchType.VALUE_MATCH;
 				currentKey = currentFilterKey;
 			}
 
@@ -249,8 +267,13 @@ public class ApplyApiController implements ApplyApi {
 					// safety check. We should have the same JSON type. If not, just ignore this.
 					continue;
 				}
-				if (!processJSONString(currentKey, resource, (String) resourceObject, (String) childFilter, replace)) {
-					retv = false;
+				if (!processJSONString(currentKey, resource, (String) resourceObject, (String) childFilter, matchType)) {
+					if (MatchType.REGEX_REPLACE == matchType || MatchType.REPLACE == matchType) {
+						replacedMap.put(currentKey, resourceObject);
+						retv = true;
+					} else {
+						retv = false;
+					}
 				}
 			} else if (childFilter instanceof JSONObject) {
 				// We can't really decide now. Move on to the child(ren).
@@ -267,20 +290,33 @@ public class ApplyApiController implements ApplyApi {
 					// element.
 					continue;
 				}
-				if (!processJSONArray((JSONArray) resourceObject, (JSONArray) childFilter, replace)) {
+				if (!processJSONArray((JSONArray) resourceObject, (JSONArray) childFilter, matchType)) {
 					retv = false;
 				}
 			} else {
 				// non String value
-				if (!processJSONValue(currentKey, resource, (Object) resourceObject, (Object) childFilter, replace)) {
-					retv = false;
+				if (!processJSONValue(currentKey, resource, (Object) resourceObject, (Object) childFilter, matchType)) {
+					if (MatchType.REGEX_REPLACE == matchType || MatchType.REPLACE == matchType) {
+						replacedMap.put(currentKey, resourceObject);
+						retv = true;
+					} else {
+						retv = false;
+					}
 				}
 			}
 		}
+		
+		if (!replacedMap.isEmpty()) {
+			if (retv == false) {
+				for (Map.Entry<String, Object> entry : replacedMap.entrySet()) {
+					resource.put(entry.getKey(), entry.getValue());
+				}
+			}
+		}		
 		return retv;
 	}
 
-	private boolean processJSONArray(JSONArray resource, JSONArray filter, boolean replace) {
+	private boolean processJSONArray(JSONArray resource, JSONArray filter, MatchType matchType) {
 		boolean retv = false;
 		for (int i = 0; i < filter.length(); i++) {
 			Object filterJson = filter.get(i);
@@ -295,11 +331,14 @@ public class ApplyApiController implements ApplyApi {
 					// It would not be true as all FHIR list contains another JSON object. But, if
 					// this happens, the FHIR
 					// should have that as well. And, if FHIR has the value and replace is true, set it now.
-					if (replace == true) {
+					if (matchType == MatchType.REPLACE) {
 						resource.put(i, filterJson); // put i_th value of filter.
 						break;
+					} else if (matchType == MatchType.REGEX_REPLACE) {
+						
 					}
-					if (processJSONString(j, resource, (String) resourceJson, (String) filterJson, false)) {
+					
+					if (processJSONString(j, resource, (String) resourceJson, (String) filterJson, matchType)) {
 						match = true;
 						// We found a match. Break out.
 						break;
@@ -311,13 +350,13 @@ public class ApplyApiController implements ApplyApi {
 						break;
 					}
 				} else if (resourceJson instanceof JSONArray && filterJson instanceof JSONArray) {
-					if (processJSONArray((JSONArray) resourceJson, (JSONArray) filterJson, replace)) {
+					if (processJSONArray((JSONArray) resourceJson, (JSONArray) filterJson, matchType)) {
 						match = true;
 						// We found a match. Break out.
 						break;
 					}
 				} else {
-					if (!processJSONValue(j, resource, (Object) resourceJson, (Object) filterJson, replace)) {
+					if (!processJSONValue(j, resource, (Object) resourceJson, (Object) filterJson, matchType)) {
 						retv = false;
 					}
 				}
@@ -338,47 +377,133 @@ public class ApplyApiController implements ApplyApi {
 		return retv;
 	}
 
-	private boolean processJSONString(String key, JSONObject parentResource, String resource, String filter,
-			boolean replace) {
-		if (resource.equalsIgnoreCase(filter)) {
-			return true;
-		} else {
-			if (replace)
-				parentResource.put(key, filter);
-			return false;
+	private String regexReplace(String resource, String filter) {
+		Iterable<String> args = Splitter.on(Pattern.compile("(\\,|\\r?\\n|\\r|^)(?:\"([^\"]*(?:\"\"[^\"]*)*)\"|([^\"\\,\\r\\n]*))")).split(filter);
+		String regexString = null;
+		String replacingString = null;
+		
+		int i = 0;
+		for (String arg: args) {
+			if (i == 0) {
+				regexString = arg;
+			} else if (i == 1) {
+				replacingString = arg;
+			} else {
+				break;
+			}
+			i++;
 		}
+		
+		if (regexString != null && replacingString != null) {
+			return resource.replaceAll(regexString, replacingString);
+		} else {
+			return null;
+		}
+
+	}
+	
+	private boolean processJSONString(String key, JSONObject parentResource, String resource, String filter,
+			MatchType matchType) {
+		boolean retv = false;
+
+		if (matchType == MatchType.VALUE_MATCH) {
+			if (resource.equalsIgnoreCase(filter)) {
+				retv = true;
+			}			
+		} else if (matchType == MatchType.REPLACE){
+			parentResource.put(key, filter);			
+		} else if (matchType == MatchType.REGEX_MATCH) {
+			if (resource.matches(filter))
+				retv = true;
+		} else if (matchType == MatchType.REGEX_REPLACE) {
+			String replacement = regexReplace(resource, filter);
+			if (replacement != null)
+				parentResource.put(key, replacement);
+		}
+		
+		return retv;
+//		
+//		if (resource.equalsIgnoreCase(filter)) {
+//			return true;
+//		} else {
+//			if (replace)
+//				parentResource.put(key, filter);
+//			return false;
+//		}
 	}
 
 	private boolean processJSONString(int index, JSONArray parentResource, String resource, String filter,
-			boolean replace) {
-		if (resource.equalsIgnoreCase(filter)) {
-			return true;
-		} else {
-			if (replace)
-				parentResource.put(index, filter);
-			return false;
+			MatchType matchType) {
+		boolean retv = false;
+		
+		if (matchType == MatchType.VALUE_MATCH) {
+			if (resource.equalsIgnoreCase(filter)) {
+				retv = true;
+			}			
+		} else if (matchType == MatchType.REPLACE){
+			parentResource.put(index, filter);			
+		} else if (matchType == MatchType.REGEX_MATCH) {
+			if (resource.matches(filter))
+				retv = true;
+		} else if (matchType == MatchType.REGEX_REPLACE) {
+			String replacement = regexReplace(resource, filter);
+			if (replacement != null)
+				parentResource.put(index, replacement);
 		}
+		
+		return retv;
+
+//		if (resource.equalsIgnoreCase(filter)) {
+//			return true;
+//		} else {
+//			if (replace)
+//				parentResource.put(index, filter);
+//			return false;
+//		}
 	}
 
 	private boolean processJSONValue(String key, JSONObject parentResource, Object resource, Object filter,
-			boolean replace) {
-		if (resource == filter) {
-			return true;
-		} else {
-			if (replace)
-				parentResource.put(key, filter);
-			return false;
+			MatchType matchType) {
+		if (matchType == MatchType.VALUE_MATCH) {
+			if (resource == filter) {
+				return true;	
+			}
+		} else if (matchType == MatchType.REPLACE) {
+			parentResource.put(key, filter);
+			return false;			
 		}
+			
+		return false;
+		
+//		if (resource == filter) {
+//			return true;
+//		} else {
+//			if (matchType == MatchType.REPLACE)
+//				parentResource.put(key, filter);
+//			return false;
+//		}
 	}
 
 	private boolean processJSONValue(int index, JSONArray parentResource, Object resource, Object filter,
-			boolean replace) {
-		if (resource == filter) {
-			return true;
-		} else {
-			if (replace)
-				parentResource.put(index, filter);
-			return false;
+			MatchType matchType) {
+		if (matchType == MatchType.VALUE_MATCH) {
+			if (resource == filter) {
+				return true;	
+			}
+		} else if (matchType == MatchType.REPLACE) {
+			parentResource.put(index, filter);
+			return false;			
 		}
+			
+		return false;
+//
+//		
+//		if (resource == filter) {
+//			return true;
+//		} else {
+//			if (matchType == MatchType.REPLACE)
+//				parentResource.put(index, filter);
+//			return false;
+//		}
 	}
 }
